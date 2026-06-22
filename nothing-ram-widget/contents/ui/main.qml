@@ -11,8 +11,15 @@ PlasmoidItem {
     preferredRepresentation: fullRepresentation
 
     property real ram: 0.0
+    property var totalRam: 0
+    property var usedRam: 0
     property var history: []
     readonly property int maxHistory: 40
+
+    FontLoader {
+        id: ndotFont
+        source: Qt.resolvedUrl("../fonts/ndot.ttf")
+    }
 
     P5Support.DataSource {
         id: ds
@@ -42,6 +49,10 @@ PlasmoidItem {
         }
         if (total > 0) {
             ram = 1 - (avail / total);
+
+            usedRam = (total - avail) / 1024 / 1024;
+            totalRam = total / 1024 / 1024;
+
             var h = history.slice();
             h.push(ram);
             if (h.length > maxHistory) h.shift();
@@ -84,17 +95,19 @@ PlasmoidItem {
                     Text {
                         text: "RAM"
                         color: "#ffffff"
-                        font.pixelSize: 11
+                        font.family: ndotFont.name
+                        font.pixelSize: 12
                         font.letterSpacing: 3
-                        font.weight: Font.Medium
+                        font.weight: Font.Bold
                         opacity: 0.5
                         width: parent.width / 2
                     }
 
                     Text {
-                        text: Math.round(root.ram * 100) + "%"
+                        text: Math.round(root.ram * 100) + "% " + `( ${root.usedRam.toFixed(1)}  / ${root.totalRam.toFixed(1) })`
                         color: "#ffffff"
-                        font.pixelSize: 11
+                        font.family: ndotFont.name
+                        font.pixelSize: 12
                         font.letterSpacing: 1
                         font.weight: Font.DemiBold
                         horizontalAlignment: Text.AlignRight
