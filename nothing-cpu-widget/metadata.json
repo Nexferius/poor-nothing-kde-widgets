@@ -1,0 +1,21 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "zinczorphin@email.com",
+                "Name": "Jack Faith"
+            }
+        ],
+        "Category": "",
+        "Description": "Simple date widget showing the date with the day of the week.",
+        "EnabledByDefault": true,
+        "Icon": "/icon.png",
+        "Id": "nothing-cpu-widget",
+        "License": "GPL-2.0+",
+        "Name": "Nothing CPU",
+        "Version": "1.1",
+        "Website": "https://github.com/jaxparrow07/nothing-kde-widgets"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}
