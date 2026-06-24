@@ -8,7 +8,9 @@ PlasmoidItem {
     id: root
 
     Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
-    preferredRepresentation: fullRepresentation
+    preferredRepresentation: plasmoid.formFactor === PlasmaCore.Types.Planar
+                            ? fullRepresentation
+                            : compactRepresentation
 
     readonly property string sinkName:       "alsa_output.pci-0000_11_00.6.analog-stereo"
     readonly property string portLineout:    "analog-output-lineout"
@@ -60,36 +62,30 @@ PlasmoidItem {
     }
 
     // ── pasek (compact) ──────────────────────────────────────────────────────
-    compactRepresentation: Item {
-        Layout.preferredWidth: 36
-        Layout.preferredHeight: 36
+compactRepresentation: Item {
+    Layout.preferredWidth: compactRepresentationItem.height  // kwadrat = wysokość paska
+    Layout.preferredHeight: compactRepresentationItem.height
 
-        PlasmaCore.ToolTipArea {
-            anchors.fill: parent
-            mainText: root.activePort === "headphones" ? "Słuchawki" : "Wyjście liniowe"
-            subText: "Kliknij aby przełączyć"
-        }
-
-
-
-        Image {
-            anchors.centerIn: parent
-            width: 22
-            height: 22
-            source: root.activePort === "headphones"
-                ? Qt.resolvedUrl("../icons/nothing_headphones.png")
-                : Qt.resolvedUrl("../icons/nothing_speaker.png")
-            sourceSize.width: 22
-            sourceSize.height:22
-            smooth: true
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.toggle()
-        }
+    Image {
+        anchors.centerIn: parent
+        width: Math.min(parent.width, parent.height) * 1
+        height: width
+        source: root.activePort === "headphones"
+            ? Qt.resolvedUrl("../icons/nothing_speaker.png")
+            : Qt.resolvedUrl("../icons/nothing_headphones.png")
+        sourceSize.width: 64
+        sourceSize.height: 64
+        smooth: true
     }
+
+    MouseArea {
+        anchors.fill: parent
+        cursorShape: Qt.PointingHandCursor
+        onClicked: root.toggle()
+    }
+    
+
+}
 
     // ── pulpit (full) ────────────────────────────────────────────────────────
     fullRepresentation: Item {
