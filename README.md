@@ -12,6 +12,8 @@ Shows cpu usage
 Basic calendar
 4. **nothing-audio-widget**
 Changes audio input on click. Available config.
+5. **nothing-notes-widget**
+Basic sticky notes function.
 
 ### How does it look
 <img alt="screenshot" src="repositoryStuff/screenshot.png"/>
