@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0
+                          http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+    <kcfgfile name=""/>
+    <group name="General">
+        <entry name="sinkName" type="String">
+            <default>alsa_output.pci-0000_11_00.6.analog-stereo</default>
+        </entry>
+        <entry name="portLineout" type="String">
+            <default>analog-output-lineout</default>
+        </entry>
+        <entry name="portHeadphones" type="String">
+            <default>analog-output-headphones</default>
+        </entry>
+        <entry name="labelLineout" type="String">
+            <default>SPEAKERS</default>
+        </entry>
+        <entry name="labelHeadphones" type="String">
+            <default>HEADPHONES</default>
+        </entry>
+        <entry name="updateInterval" type="Int">
+            <default>3000</default>
+        </entry>
+    </group>
+</kcfg>

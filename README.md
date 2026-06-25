@@ -11,7 +11,7 @@ Shows cpu usage
 3. **nothing-calendar-widget**
 Basic calendar
 4. **nothing-audio-widget**
-Changes audio input on click
+Changes audio input on click. Available config.
 
 ### How does it look
 <img alt="screenshot" src="repositoryStuff/screenshot.png"/>

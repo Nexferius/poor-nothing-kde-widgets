@@ -9,15 +9,19 @@ PlasmoidItem {
 
     Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
     preferredRepresentation: plasmoid.formFactor === PlasmaCore.Types.Planar
-                            ? fullRepresentation
-                            : compactRepresentation
+                             ? fullRepresentation
+                             : compactRepresentation
 
-    readonly property string sinkName:       "alsa_output.pci-0000_11_00.6.analog-stereo"
-    readonly property string portLineout:    "analog-output-lineout"
-    readonly property string portHeadphones: "analog-output-headphones"
+    // ── ustawienia z konfiguracji ────────────────────────────────────────────
+    readonly property string sinkName:       plasmoid.configuration.sinkName
+    readonly property string portLineout:    plasmoid.configuration.portLineout
+    readonly property string portHeadphones: plasmoid.configuration.portHeadphones
+    readonly property string labelLineout:   plasmoid.configuration.labelLineout
+    readonly property string labelHeadphones: plasmoid.configuration.labelHeadphones
 
     property string activePort: "unknown"
 
+    // ── odczyt / ustawianie portu ────────────────────────────────────────────
     P5Support.DataSource {
         id: ds
         engine: "executable"
@@ -26,9 +30,9 @@ PlasmoidItem {
         onNewData: (sourceName, data) => {
             if (data && data["exit code"] === 0) {
                 var out = data.stdout || ""
-                if (out.indexOf("analog-output-headphones") !== -1)
+                if (out.indexOf(root.portHeadphones) !== -1)
                     root.activePort = "headphones"
-                else if (out.indexOf("analog-output-lineout") !== -1)
+                else if (out.indexOf(root.portLineout) !== -1)
                     root.activePort = "lineout"
             }
             disconnectSource(sourceName)
@@ -54,7 +58,7 @@ PlasmoidItem {
     }
 
     Timer {
-        interval: 3000
+        interval: plasmoid.configuration.updateInterval
         running: true
         repeat: true
         triggeredOnStart: true
@@ -62,30 +66,28 @@ PlasmoidItem {
     }
 
     // ── pasek (compact) ──────────────────────────────────────────────────────
-compactRepresentation: Item {
-    Layout.preferredWidth: compactRepresentationItem.height  // kwadrat = wysokość paska
-    Layout.preferredHeight: compactRepresentationItem.height
+    compactRepresentation: Item {
+        Layout.preferredWidth: compactRepresentationItem.height  // kwadrat = wysokość paska
+        Layout.preferredHeight: compactRepresentationItem.height
 
-    Image {
-        anchors.centerIn: parent
-        width: Math.min(parent.width, parent.height) * 1
-        height: width
-        source: root.activePort === "headphones"
+        Image {
+            anchors.centerIn: parent
+            width: Math.min(parent.width, parent.height)
+            height: width
+            source: root.activePort === "headphones"
             ? Qt.resolvedUrl("../icons/nothing_speaker.png")
             : Qt.resolvedUrl("../icons/nothing_headphones.png")
-        sourceSize.width: 64
-        sourceSize.height: 64
-        smooth: true
-    }
+            sourceSize.width: 64
+            sourceSize.height: 64
+            smooth: true
+        }
 
-    MouseArea {
-        anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
-        onClicked: root.toggle()
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.toggle()
+        }
     }
-    
-
-}
 
     // ── pulpit (full) ────────────────────────────────────────────────────────
     fullRepresentation: Item {
@@ -101,21 +103,16 @@ compactRepresentation: Item {
             radius: (width / height) >= 1.8 ? height / 2 : 18
             clip: true
 
-            // ── ruchome tło aktywnego przycisku ──────────────────────────────────
+            // ── slider ───────────────────────────────────────────────────────
             Rectangle {
                 id: slider
                 width: parent.width / 2
                 height: parent.height
                 radius: parent.radius
                 color: "#292929"
-
                 x: root.activePort === "headphones" ? 0 : parent.width / 2
-
                 Behavior on x {
-                    NumberAnimation {
-                        duration: 250
-                        easing.type: Easing.InOutQuad
-                    }
+                    NumberAnimation { duration: 250; easing.type: Easing.InOutQuad }
                 }
             }
 
@@ -123,7 +120,7 @@ compactRepresentation: Item {
                 anchors.fill: parent
                 spacing: 0
 
-                // ── HEADPHONES ───────────────────────────────────────────────────
+                // ── Port 1 (Headphones) ──────────────────────────────────────
                 Item {
                     width: parent.width / 2
                     height: parent.height
@@ -134,20 +131,19 @@ compactRepresentation: Item {
 
                         Image {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            width: 64; height: 64
-                            source: Qt.resolvedUrl("../icons/nothing-speaker.svg")
-                            sourceSize.width: 64; sourceSize.height: 64
+                            width: 40; height: 40
+                            source: Qt.resolvedUrl("../icons/nothing_headphones.png")
+                            sourceSize.width: 128; sourceSize.height: 128
                             smooth: true
                         }
 
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            text: "SPEAKERS"
+                            text: root.labelHeadphones
                             font.pixelSize: 9
                             font.letterSpacing: 2
                             color: root.activePort === "headphones" ? "#FF666D" : "#ffffff"
                             font.weight: Font.Medium
-
                             Behavior on color { ColorAnimation { duration: 250 } }
                         }
                     }
@@ -162,7 +158,7 @@ compactRepresentation: Item {
                     }
                 }
 
-                // ── SPEAKERS ─────────────────────────────────────────────────────
+                // ── Port 2 (Lineout) ─────────────────────────────────────────
                 Item {
                     width: parent.width / 2
                     height: parent.height
@@ -173,20 +169,19 @@ compactRepresentation: Item {
 
                         Image {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            width: 64; height: 64
-                            source: Qt.resolvedUrl("../icons/nothing-headphones.svg")
-                            sourceSize.width: 64; sourceSize.height: 64
+                            width: 40; height: 40
+                            source: Qt.resolvedUrl("../icons/nothing_speaker.png")
+                            sourceSize.width: 128; sourceSize.height: 128
                             smooth: true
                         }
 
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            text: "HEADPHONES"
+                            text: root.labelLineout
                             font.pixelSize: 9
                             font.letterSpacing: 2
                             color: root.activePort === "lineout" ? "#FF666D" : "#ffffff"
                             font.weight: Font.Medium
-
                             Behavior on color { ColorAnimation { duration: 250 } }
                         }
                     }
