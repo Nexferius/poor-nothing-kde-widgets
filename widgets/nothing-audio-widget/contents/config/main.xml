@@ -5,14 +5,11 @@
                           http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
     <kcfgfile name=""/>
     <group name="General">
-        <entry name="sinkName" type="String">
-            <default>alsa_output.pci-0000_11_00.6.analog-stereo</default>
+        <entry name="sinkSpeakers" type="String">
+            <default>alsa_output.pci-0000_00_1f.3.analog-stereo</default>
         </entry>
-        <entry name="portLineout" type="String">
-            <default>analog-output-lineout</default>
-        </entry>
-        <entry name="portHeadphones" type="String">
-            <default>analog-output-headphones</default>
+        <entry name="sinkHeadphones" type="String">
+            <default>alsa_output.usb-GN_Audio_A_S_Jabra_Evolve2_30_SE_B0000031A7C811-00.analog-stereo</default>
         </entry>
         <entry name="labelLineout" type="String">
             <default>SPEAKERS</default>
