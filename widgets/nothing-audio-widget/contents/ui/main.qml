@@ -12,16 +12,19 @@ PlasmoidItem {
                              ? fullRepresentation
                              : compactRepresentation
 
-    // ── ustawienia z konfiguracji ────────────────────────────────────────────
-    readonly property string sinkName:       plasmoid.configuration.sinkName
-    readonly property string portLineout:    plasmoid.configuration.portLineout
-    readonly property string portHeadphones: plasmoid.configuration.portHeadphones
-    readonly property string labelLineout:   plasmoid.configuration.labelLineout
+    // ── settings from config ─────────────────────────────────────────────────
+    // NOTE: speakers and headphones are treated as two separate PipeWire
+    // sinks (e.g. a built-in card + a USB headset), NOT two ports on the
+    // same sink. Many setups (like a USB headset) don't expose a port at
+    // all, so switching "default sink" is the only thing that reliably works.
+    readonly property string sinkSpeakers:    plasmoid.configuration.sinkSpeakers
+    readonly property string sinkHeadphones:  plasmoid.configuration.sinkHeadphones
+    readonly property string labelLineout:    plasmoid.configuration.labelLineout
     readonly property string labelHeadphones: plasmoid.configuration.labelHeadphones
 
     property string activePort: "unknown"
 
-    // ── odczyt / ustawianie portu ────────────────────────────────────────────
+    // ── read / set the active sink ───────────────────────────────────────────
     P5Support.DataSource {
         id: ds
         engine: "executable"
@@ -29,30 +32,33 @@ PlasmoidItem {
 
         onNewData: (sourceName, data) => {
             if (data && data["exit code"] === 0) {
-                var out = data.stdout || ""
-                if (out.indexOf(root.portHeadphones) !== -1)
+                var out = (data.stdout || "").trim()
+                if (out === root.sinkHeadphones)
                     root.activePort = "headphones"
-                else if (out.indexOf(root.portLineout) !== -1)
+                else if (out === root.sinkSpeakers)
                     root.activePort = "lineout"
             }
             disconnectSource(sourceName)
         }
 
         function queryPort() {
-            connectSource("pactl list sinks | grep -A 2 'Active Port' | grep 'Active Port'")
+            connectSource("pactl get-default-sink")
         }
 
-        function setPort(port) {
-            connectSource("pactl set-sink-port " + root.sinkName + " " + port)
+        // Switches the default sink AND moves any already-playing streams
+        // over to it, so audio actually follows the switch immediately.
+        function setSink(sink) {
+            if (!sink) return
+            connectSource("pactl set-default-sink '" + sink + "' && pactl list sink-inputs short | cut -f1 | xargs -r -I{} pactl move-sink-input {} '" + sink + "'")
         }
     }
 
     function toggle() {
         if (activePort === "headphones") {
-            ds.setPort(portLineout)
+            ds.setSink(sinkSpeakers)
             activePort = "lineout"
         } else {
-            ds.setPort(portHeadphones)
+            ds.setSink(sinkHeadphones)
             activePort = "headphones"
         }
     }
@@ -65,9 +71,9 @@ PlasmoidItem {
         onTriggered: ds.queryPort()
     }
 
-    // ── pasek (compact) ──────────────────────────────────────────────────────
+    // ── panel (compact) ──────────────────────────────────────────────────────
     compactRepresentation: Item {
-        Layout.preferredWidth: compactRepresentationItem.height  // kwadrat = wysokość paska
+        Layout.preferredWidth: compactRepresentationItem.height  // square = bar height
         Layout.preferredHeight: compactRepresentationItem.height
 
         Image {
@@ -89,7 +95,7 @@ PlasmoidItem {
         }
     }
 
-    // ── pulpit (full) ────────────────────────────────────────────────────────
+    // ── desktop (full) ───────────────────────────────────────────────────────
     fullRepresentation: Item {
         Layout.preferredWidth:  220
         Layout.preferredHeight: 90
@@ -120,7 +126,7 @@ PlasmoidItem {
                 anchors.fill: parent
                 spacing: 0
 
-                // ── Port 1 (Headphones) ──────────────────────────────────────
+                // ── Sink 1 (Headphones) ────────────────────────────────────────
                 Item {
                     width: parent.width / 2
                     height: parent.height
@@ -152,13 +158,13 @@ PlasmoidItem {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            ds.setPort(root.portHeadphones)
+                            ds.setSink(root.sinkHeadphones)
                             root.activePort = "headphones"
                         }
                     }
                 }
 
-                // ── Port 2 (Lineout) ─────────────────────────────────────────
+                // ── Sink 2 (Speakers) ───────────────────────────────────────────
                 Item {
                     width: parent.width / 2
                     height: parent.height
@@ -190,7 +196,7 @@ PlasmoidItem {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            ds.setPort(root.portLineout)
+                            ds.setSink(root.sinkSpeakers)
                             root.activePort = "lineout"
                         }
                     }
