@@ -7,14 +7,16 @@ import org.kde.plasma.plasma5support as P5Support
 Kirigami.FormLayout {
     id: configPage
 
-    property alias cfg_sinkName:       sinkField.text
-    property alias cfg_portLineout:    portLineoutField.text
-    property alias cfg_portHeadphones: portHeadphonesField.text
-    property alias cfg_labelLineout:   labelLineoutField.text
+    property alias cfg_sinkSpeakers:    speakersField.text
+    property alias cfg_sinkHeadphones:  headphonesField.text
+    property alias cfg_labelLineout:    labelLineoutField.text
     property alias cfg_labelHeadphones: labelHeadphonesField.text
-    property alias cfg_updateInterval: intervalSpin.value
+    property alias cfg_updateInterval:  intervalSpin.value
 
-    // ── wykrywanie dostępnych sinków ─────────────────────────────────────────
+    // ── detect available sinks ───────────────────────────────────────────────
+    // Speakers and headphones are usually two separate PipeWire *sinks*
+    // (e.g. a built-in card and a USB headset) rather than two ports on one
+    // sink, so this switches the default sink instead of a port.
     P5Support.DataSource {
         id: sinksDs
         engine: "executable"
@@ -39,52 +41,35 @@ Kirigami.FormLayout {
         }
     }
 
-    P5Support.DataSource {
-        id: portsDs
-        engine: "executable"
-        connectedSources: []
-
-        onNewData: (sourceName, data) => {
-            if (data && data["exit code"] === 0) {
-                var lines = (data.stdout || "").split("\n")
-                portsModel.clear()
-                for (var i = 0; i < lines.length; i++) {
-                    var line = lines[i].trim()
-                    // linia portu zaczyna się od nazwy-portu: Opis
-                    var match = line.match(/^(\S+):\s/)
-                    if (match) {
-                        portsModel.append({ name: match[1] })
-                    }
-                }
-            }
-            disconnectSource(sourceName)
-        }
-
-        function queryPorts(sink) {
-            if (!sink) return
-            connectSource("pactl list sinks | grep -A 60 'Name: " + sink + "' | grep -E '^\\s+[a-z].*:.*type:' | awk '{print $1}'")
-        }
-    }
-
     ListModel { id: sinksModel }
-    ListModel { id: portsModel }
 
     Component.onCompleted: sinksDs.querySinks()
 
-    // ── Sink ─────────────────────────────────────────────────────────────────
+    // ── Sinks ────────────────────────────────────────────────────────────────
     Item {
         Kirigami.FormData.isSection: true
-        Kirigami.FormData.label: "Audio Device"
+        Kirigami.FormData.label: "Audio Devices"
     }
 
     RowLayout {
-        Kirigami.FormData.label: "Sink name:"
+        Kirigami.FormData.label: "Speakers sink name:"
         spacing: 6
 
         QQC2.TextField {
-            id: sinkField
-            Layout.preferredWidth: 300
-            placeholderText: "np. alsa_output.pci-0000_11_00.6.analog-stereo"
+            id: speakersField
+            Layout.preferredWidth: 340
+            placeholderText: "e.g. alsa_output.pci-0000_00_1f.3.analog-stereo"
+        }
+    }
+
+    RowLayout {
+        Kirigami.FormData.label: "Headphones sink name:"
+        spacing: 6
+
+        QQC2.TextField {
+            id: headphonesField
+            Layout.preferredWidth: 340
+            placeholderText: "e.g. alsa_output.usb-...-00.analog-stereo"
         }
 
         QQC2.Button {
@@ -93,19 +78,27 @@ Kirigami.FormLayout {
         }
     }
 
-    // lista wykrytych sinków
+    // list of detected sinks, click to assign to either field
     ColumnLayout {
         Kirigami.FormData.label: "Detected sinks:"
         visible: sinksModel.count > 0
 
         Repeater {
             model: sinksModel
-            QQC2.Button {
-                text: model.name
-                flat: true
-                onClicked: {
-                    sinkField.text = model.name
-                    portsDs.queryPorts(model.name)
+            RowLayout {
+                QQC2.Button {
+                    text: "→ Speakers"
+                    flat: true
+                    onClicked: speakersField.text = model.name
+                }
+                QQC2.Button {
+                    text: "→ Headphones"
+                    flat: true
+                    onClicked: headphonesField.text = model.name
+                }
+                QQC2.Label {
+                    text: model.name
+                    opacity: 0.7
                 }
             }
         }
@@ -114,65 +107,11 @@ Kirigami.FormLayout {
             Layout.fillWidth: true
             visible: true
             type: Kirigami.MessageType.Information
-            text: "Kliknij sink aby go wybrać i załadować jego porty."
+            text: "Click a detected sink to assign it to Speakers or Headphones."
         }
     }
 
-    // ── Porty ────────────────────────────────────────────────────────────────
-    Item {
-        Kirigami.FormData.isSection: true
-        Kirigami.FormData.label: "Ports"
-    }
-
-    RowLayout {
-        Kirigami.FormData.label: "Port 1 (Lineout):"
-        spacing: 6
-
-        QQC2.TextField {
-            id: portLineoutField
-            Layout.preferredWidth: 260
-            placeholderText: "np. analog-output-lineout"
-        }
-    }
-
-    RowLayout {
-        Kirigami.FormData.label: "Port 2 (Headphones):"
-        spacing: 6
-
-        QQC2.TextField {
-            id: portHeadphonesField
-            Layout.preferredWidth: 260
-            placeholderText: "np. analog-output-headphones"
-        }
-    }
-
-    // lista wykrytych portów
-    ColumnLayout {
-        Kirigami.FormData.label: "Detected ports:"
-        visible: portsModel.count > 0
-
-        Repeater {
-            model: portsModel
-            RowLayout {
-                QQC2.Button {
-                    text: "→ Port 1"
-                    flat: true
-                    onClicked: portLineoutField.text = model.name
-                }
-                QQC2.Button {
-                    text: "→ Port 2"
-                    flat: true
-                    onClicked: portHeadphonesField.text = model.name
-                }
-                QQC2.Label {
-                    text: model.name
-                    opacity: 0.7
-                }
-            }
-        }
-    }
-
-    // ── Etykiety ─────────────────────────────────────────────────────────────
+    // ── Labels ───────────────────────────────────────────────────────────────
     Item {
         Kirigami.FormData.isSection: true
         Kirigami.FormData.label: "Labels"
@@ -180,17 +119,17 @@ Kirigami.FormLayout {
 
     QQC2.TextField {
         id: labelLineoutField
-        Kirigami.FormData.label: "Label Port 1:"
+        Kirigami.FormData.label: "Label (Speakers):"
         placeholderText: "SPEAKERS"
     }
 
     QQC2.TextField {
         id: labelHeadphonesField
-        Kirigami.FormData.label: "Label Port 2:"
+        Kirigami.FormData.label: "Label (Headphones):"
         placeholderText: "HEADPHONES"
     }
 
-    // ── Odświeżanie ───────────────────────────────────────────────────────────
+    // ── Refresh ──────────────────────────────────────────────────────────────
     Item {
         Kirigami.FormData.isSection: true
         Kirigami.FormData.label: "Advanced"
